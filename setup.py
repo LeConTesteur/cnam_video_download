@@ -8,6 +8,12 @@ DESCRIPTION = ''
 CLASSIFIERS = []
 
 requirements = [
+    "moviepy",
+    "doit",
+    "pydantic-xml",
+    "requests",
+    "beautifulsoup4",
+    "click",
 ]
 
 requirements_tests = [
@@ -17,7 +23,7 @@ extras = {
     'tests': requirements_tests,
 }
 
-NAME = 'python-template'
+NAME = 'CNAM-video-download'
 MODULE = NAME.replace("-", "_")
 setuptools.setup(
     name=NAME,
@@ -31,7 +37,7 @@ setuptools.setup(
         "Bug Tracker": f"https://github.com/LeConTesteur/{NAME}/issues",
     },
     classifiers=CLASSIFIERS,
-    package_dir={NAME: MODULE},
+    package_dir={NAME: 'cnam'},
     packages={"": MODULE},
     python_requires=">=3.8",
     install_requires = requirements,

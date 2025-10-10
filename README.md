@@ -1,6 +1,6 @@
-# python-template
+# CNAM-video-download
 
-![build](https://github.com/LeConTesteur/python-template/actions/workflows/build.yml/badge.svg)
+![build](https://github.com/LeConTesteur/CNAM-video-download/actions/workflows/build.yml/badge.svg)
 
 
 ## Description
@@ -8,14 +8,16 @@
 
 ### Example
 
-
+```
+PYTHONPATH=. python3  cnam/video_downloader/__main__.py presentation=d2f56a682f84f2238390797225999a3efc4a19af-1758646184048
+```
 
 ## Installation
 
 Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
 
 ```bash
-pip install python-template
+pip install CNAM-video-download
 ```
 
 ## Usage

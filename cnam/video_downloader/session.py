@@ -1,0 +1,55 @@
+import contextvars
+from bs4 import BeautifulSoup
+import requests
+requests_session = contextvars.ContextVar("requests_session")
+
+TIMEOUT=30
+
+def authentification(username:str, password:str):
+    session = requests.Session()
+    session.headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            }
+    session.timeout = TIMEOUT
+    base_url = 'https://idp.lecnam.net'
+    response = session.get(base_url)
+    #print(session.cookies)
+    #print(response.text)
+    soup = BeautifulSoup(response.text, features='html.parser')
+    form = soup.select_one('form')
+    url = form.attrs['action']
+    response = session.post(
+        url=f'{base_url}{url}',
+        data={'j_username':username, 'j_password':password, '_eventId_proceed':''},
+        headers={'content-type': 'application/x-www-form-urlencoded'}
+    )
+    #print(response.url)
+    #print(response.request.body)
+    #print(response.request.headers)
+    #print(response)
+    #print(response.text)
+    soup = BeautifulSoup(response.text, features='html.parser')
+    form = soup.select_one('form')
+    url = form.attrs['action']
+    relay_state = soup.select_one('input[name=RelayState]').attrs['value']
+    saml_response = soup.select_one('input[name=SAMLResponse]').attrs['value']
+    data = {
+        'RelayState':relay_state,
+        'SAMLResponse':saml_response,
+    }
+    #print(url)
+    #print(data)
+    response = session.post(
+        url=url,
+        data=data
+        )
+    #print(response.url)
+    #print(response.request.body)
+    #print(response.request.headers)
+    #print(response)
+    #print(response.text)
+    #print(session.cookies)
+    requests_session.set(session)
+
