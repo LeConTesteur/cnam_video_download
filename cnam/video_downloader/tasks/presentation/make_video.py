@@ -1,11 +1,11 @@
-#from moviepy import Compo
-
+from typing import List, Dict, Callable, Optional
 from pydantic import BaseModel
 from pathlib import Path
-from typing import List, Dict, Callable, Optional
-from moviepy import ImageClip, CompositeVideoClip, VideoFileClip, AudioFileClip, concatenate_videoclips, CompositeAudioClip, VideoClip, AudioClip
 from itertools import islice
 from datetime import timedelta
+
+from moviepy import ImageClip, VideoFileClip, AudioFileClip,  VideoClip, AudioClip
+
 
 Time = float
 Position = int

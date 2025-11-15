@@ -1,26 +1,23 @@
-import requests
-from doit import get_var, create_after
-from doit.tools import create_folder
-from doit.task import Task, DelayedLoader, dict_to_task
+from datetime import datetime
 from pathlib import Path
-import xml.etree.ElementTree as ET
-from cnam.video_downloader.make_video import make_video_task, Slide, DeskShares, DeskShare, ExternalVideo
-from cnam.video_downloader.shapes_svg_model import Svg
-from cnam.video_downloader.desk_shares_xml import Recording
-from cnam.video_downloader.external_videos_json import ExternalVideo as ExternalVideoJson
-from cnam.video_downloader.tasks import GenericTask
-from cnam.video_downloader.presentation import Presentation, PresentationId
+import json
+import re
+from urllib.parse import urlparse
+
+import contextvars
+
+from doit.tools import create_folder
+from pydantic import BaseModel
+
+from bs4 import BeautifulSoup
+
+
+from cnam.video_downloader.tasks.shared.generic_task import GenericTask
+from cnam.video_downloader.tasks.presentation.presentation import Presentation, PresentationId
 from cnam.video_downloader.session import requests_session
 from cnam.video_downloader.utils import build_local_file, save_request
-from bs4 import BeautifulSoup
-import re
-import contextvars
-from pydantic import TypeAdapter, BaseModel
-import json
 
-from datetime import datetime
 
-from urllib.parse import urlparse
 
 base_dir = contextvars.ContextVar("base_dir")
 

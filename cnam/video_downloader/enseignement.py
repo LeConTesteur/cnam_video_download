@@ -1,23 +1,9 @@
-import requests
-from doit import get_var, create_after
-from doit.task import Task, DelayedLoader, dict_to_task
-from pathlib import Path
-import xml.etree.ElementTree as ET
-from cnam.video_downloader.make_video import make_video_task, Slide, DeskShares, DeskShare, ExternalVideo
-from cnam.video_downloader.shapes_svg_model import Svg
-from cnam.video_downloader.desk_shares_xml import Recording
-from cnam.video_downloader.external_videos_json import ExternalVideo as ExternalVideoJson
-from cnam.video_downloader.tasks import GenericTask
-from cnam.video_downloader.presentation import Presentation, PresentationId
-from cnam.video_downloader.session import requests_session
-from cnam.video_downloader.utils import build_local_file
-from cnam.video_downloader.eu import EuId
-from bs4 import BeautifulSoup
 import re
 
-from pydantic import TypeAdapter, BaseModel
-import json
+from bs4 import BeautifulSoup
 
+from cnam.video_downloader.session import requests_session
+from cnam.video_downloader.tasks.eu.eu import EuId
 
 
 class Enseignement:

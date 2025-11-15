@@ -1,36 +1,23 @@
-import requests
-from doit import get_var, create_after
-from doit.task import Task, DelayedLoader, dict_to_task
 from pathlib import Path
 from urllib.parse import urlparse
-import xml.etree.ElementTree as ET
-from cnam.video_downloader.make_video import make_video_task, Slide, DeskShares, DeskShare, ExternalVideo, Metadata
-from cnam.video_downloader.shapes_svg_model import Svg
-from cnam.video_downloader.desk_shares_xml import Recording as DesksharesRecording
-from cnam.video_downloader.metadata_xml import Recording as MetadataRecording
+from pydantic import TypeAdapter, BaseModel
 
-from cnam.video_downloader.external_videos_json import ExternalVideo as ExternalVideoJson
-from cnam.video_downloader.tasks import GenericTask
+from doit.task import Task
+
+from cnam.video_downloader.tasks.presentation.make_video import make_video_task, Slide, DeskShares, DeskShare, Metadata
+from cnam.video_downloader.model.presentation.shapes_svg import Svg
+from cnam.video_downloader.model.presentation.desk_shares_xml import Recording as DesksharesRecording
+from cnam.video_downloader.model.presentation.metadata_xml import Recording as MetadataRecording
+from cnam.video_downloader.model.presentation.external_videos_json import ExternalVideo as ExternalVideoJson
+from cnam.video_downloader.tasks.shared.generic_task import GenericTask
 from cnam.video_downloader.session import requests_session
 from cnam.video_downloader.utils import build_local_file, youtube_dl_bin
-
-from pydantic import TypeAdapter, BaseModel
 
 
 class MissingPresentationId(Exception):
     def __init__(self):
         super().__init__('Presentation id is missing')
 
-
-
-def build_task_prepare_presentation(presentation_id):
-    yield build_task_create_dir(presentation_id)
-    yield from build_task_download_base_files(presentation_id)
-
-def task_prepare_presentation(presentation_id):
-    if presentation_id is None:
-        raise MissingPresentationId()
-    yield from build_task_prepare_presentation(presentation_id)
 
 def get_base_files_from_presentation(presentation_id):
     return {
@@ -60,13 +47,10 @@ def is_file_exist(filename):
     return Path(filename).is_file()
 
 def download_file(path, targets):
-    #import sys
-    #print(build_url(path), file=sys.stderr)
     session = requests_session.get()
     req = session.get(
         path
     )
-    #print(req.status_code, file=sys.stderr)
     if req.status_code == 200:
         with open(targets[0], mode='wb') as fd:
             fd.write(req.content)
@@ -100,8 +84,6 @@ class BasePresentationTask(GenericTask, BaseModel):
     
     def build_url(self, path):
         url = urlparse(self.presentation_id.redirect_url)
-        #print(url)
-        #print(url._replace(path=path).geturl())
         return url._replace(path=path).geturl()
 
     def build_presentation_url(self, path):
@@ -281,103 +263,8 @@ class Presentation(BasePresentationTask):
         )
         yield from download_external_videos.to_delayed_tasks(
             executed=download_base_file.main_task.name,
-            target_regex=download_slides.build_local_file('video/*')
+            target_regex=download_base_file.build_local_file('video/*')
         )
         yield from make_video.to_delayed_tasks(
             executed=download_slides.main_task.name
         )
-
-@create_after(executed='prepare_presentation', )
-def task_presentation(presentation_id):
-    def gen():
-        yield from build_task_presentation(presentation_id)
-    if presentation_id is None:
-        raise MissingPresentationId()
-    return DelayedLoader(
-        gen,
-        executed='',
-        target_regex=build_local_file(get_var('presentation', None),'slides/*')
-    )
-        
-        
-
-@create_after(executed='presentation', target_regex=build_local_file(get_var('presentation', None), 'video/*'))
-def task_video_presentation(presentation_id):
-    presentation_id = get_var('presentation', None)
-    if presentation_id is not None:
-        yield from build_task_make_video(presentation_id)
-
-
-
-def build_task_presentation(presentation_id):
-    #yield from build_task_download_slides(presentation_id)
-    yield from build_task_external_videos(presentation_id)
-
-
-
-
-
-
-
-#@create_after(executed='download_base_files', target_regex=build_local_file('slides/*'))
-
-
-#@create_after(executed='download_base_files', target_regex=build_local_file('slides/*'))
-def build_task_external_videos(presentation_id):
-    def gen_tasks(fd):
-        external_videos = TypeAdapter(ExternalVideoJson).validate_json(fd.read())
-        for index, external_video in enumerate(external_videos.root):
-            target = build_local_file(presentation_id,f'video/external_video_{index}.mp4')
-
-            yield {
-                'name': target,
-                'actions': f'{YOUTUBE_DL_BIN} -t mp4 -o {target} {external_video.external_video_url}',
-                'targets': [target],
-            }
-    try:
-        with open(build_local_file(presentation_id,'external_videos.json'), mode='r', encoding='utf-8') as fd:
-            yield from gen_tasks(fd)
-    except FileNotFoundError:
-        pass
-
-
-
-#@create_after(executed='download_slides', target_regex=build_local_file('video/*'))
-def build_task_make_video(presentation_id):
-    slides = []
-    desk_shares = None
-    try:
-        with open(build_local_file(presentation_id,'shapes.svg'), mode='r', encoding='utf-8') as fd:
-            mydoc: Svg = Svg.from_xml(fd.read())
-            slides = [
-                Slide(
-                    path=Path(build_local_file(presentation_id,f'slides/{image.a_id}.png')),
-                    start=image.a_in,
-                    end=image.a_out,
-                    x=image.a_x,
-                    y=image.a_y,
-                    width=image.a_width,
-                    height=image.a_height
-                )
-                for image in mydoc.root
-            ]
-    except FileNotFoundError:
-        pass
-    try:
-        with open(build_local_file(presentation_id,'deskshare.xml'), mode='r', encoding='utf-8') as fd:
-            mydoc: Recording = Recording.from_xml(fd.read())
-            desk_shares = DeskShares(
-                path=build_local_file(presentation_id,'deskshare.webm'),
-                desk_shares=[
-                    DeskShare(
-                        start=event.start_timestamp,
-                        end=event.stop_timestamp,
-                        width=event.video_width,
-                        height=event.video_height)
-                    for event in mydoc.root
-                ]
-            )
-    except FileNotFoundError:
-        pass
-    yield from make_video_task(
-        build_local_file(presentation_id,'video.mp4'), slides, build_local_file(presentation_id,'webcams.webm'), desk_shares=desk_shares)

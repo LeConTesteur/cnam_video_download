@@ -1,22 +1,16 @@
-import requests
-from doit import get_var, create_after
+from itertools import chain
+import click
+
 from doit.doit_cmd import DoitMain
 from doit.cmd_base import TaskLoader2
-from pathlib import Path
-from itertools import chain
-import xml.etree.ElementTree as ET
-from cnam.video_downloader.make_video import make_video_task, Slide, DeskShares, DeskShare, ExternalVideo
-from cnam.video_downloader.shapes_svg_model import Svg
-from cnam.video_downloader.desk_shares_xml import Recording
-from cnam.video_downloader.external_videos_json import ExternalVideo as ExternalVideoJson
-from cnam.video_downloader.presentation import Presentation, PresentationId
-from cnam.video_downloader.eu import EuTask, EuId, base_dir
-from cnam.video_downloader.tasks import GenericTask
+from pydantic import  BaseModel
+
+
+from cnam.video_downloader.tasks.presentation.presentation import Presentation, PresentationId
+from cnam.video_downloader.tasks.eu.eu import EuTask, base_dir
 from cnam.video_downloader.enseignement import Enseignement
 from cnam.video_downloader.session import authentification
 from cnam.video_downloader.utils import youtube_dl_bin
-from pydantic import TypeAdapter, BaseModel
-import click
 
 
 class Credential(BaseModel):
