@@ -1,3 +1,9 @@
+"""
+Fichier principal du programme. Initialise le chargeur des tâches DoIt.
+Gère les options du programme.
+"""
+import sys
+
 from itertools import chain
 import click
 
@@ -14,11 +20,26 @@ from cnam.video_downloader.utils import youtube_dl_bin
 
 
 class Credential(BaseModel):
+    """
+    Les identifiants de l'étudiant
+    """
     username: str
     password: str
 
 class MyLoader(TaskLoader2):
-    def __init__(self, output_dir, eu_id_items: list[tuple[int, str]], presentation_urls, credential: Credential, verbosity):
+    """
+    Charge les tâches
+    """
+    # pylint: disable=too-many-arguments
+    def __init__(self,
+                 output_dir,
+                 eu_id_items: list[tuple[int, str]],
+                 presentation_urls,
+                 *,
+                 credential:Credential,
+                 verbosity
+    ):
+        super().__init__()
         self.eu_id_items = eu_id_items
         self.presentation_urls = presentation_urls
         self.credential = credential
@@ -33,14 +54,20 @@ class MyLoader(TaskLoader2):
         return {'verbosity': self.verbosity}
 
     def load_tasks(self, cmd, pos_args):
-        print('loads')
-        
         list_to_tasks = []
         for eu_id_item in self.eu_id_items:
             list_to_tasks.append(EuTask(eu_id=eu_id_item[0], name=eu_id_item[1]))
-        
+
         for presentation_url in self.presentation_urls:
-            list_to_tasks.append(Presentation(presentation_id=PresentationId(recording_id='',first_url='', redirect_url=presentation_url)))
+            list_to_tasks.append(
+                Presentation(
+                    presentation_id=PresentationId(
+                        recording_id='',
+                        first_url='',
+                        redirect_url=presentation_url
+                    )
+                )
+            )
 
         if not list_to_tasks:
             for eu_id in Enseignement().get_eu():
@@ -49,17 +76,23 @@ class MyLoader(TaskLoader2):
         return list(chain(
             *(element.to_tasks() for element in list_to_tasks)
             ))
-        
-        
+
+
 @click.command()
-@click.option('--output-dir',required=True , type=click.Path(file_okay=False, dir_okay=True, writable=True, exists=True))
+@click.option('--output-dir',required=True , type=click.Path(
+        file_okay=False, dir_okay=True, writable=True, exists=True
+    )
+)
 @click.option('eu_id_items', '--eu-id', nargs=2, multiple=True, type=(int, str))
 @click.option('--presentation-url', multiple=True, type=str)
 @click.option('--username', envvar='CNAM_USERNAME', prompt=True, hide_input=True, required=True)
 @click.option('--password', envvar='CNAM_PASSWORD', prompt=True, required=True)
 @click.option('--verbosity', type=click.IntRange(0, 2), default=0)
-def main(output_dir, eu_id_items, presentation_url, username, password, verbosity):
-    import sys
+# pylint: disable=too-many-arguments
+def main(*,output_dir, eu_id_items, presentation_url, username, password, verbosity):
+    """
+    Fonction principale
+    """
     sys.exit(
         DoitMain(
             MyLoader(
@@ -73,4 +106,5 @@ def main(output_dir, eu_id_items, presentation_url, username, password, verbosit
     )
 
 if __name__ =='__main__':
+    # pylint: disable=no-value-for-parameter, missing-kwoa
     main()

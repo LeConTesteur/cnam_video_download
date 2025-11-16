@@ -1,11 +1,18 @@
-import contextvars
+"""
+Contient les fonctions liées à l'authentification sur le site du CNAM.
+"""
+from contextvars import ContextVar
 from bs4 import BeautifulSoup
 import requests
-requests_session = contextvars.ContextVar("requests_session")
+requests_session: ContextVar[requests.Session] = ContextVar("requests_session")
 
 TIMEOUT=30
 
 def authentification(username:str, password:str):
+    """
+    Authentifie un utilisateur au site du CNAM. La session ainsi créée est sauvegardée dans la 
+    variable de contexte global **requests_session**.
+    """
     session = requests.Session()
     session.headers = {
             'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:144.0) Gecko/20100101 Firefox/144.0',
@@ -15,8 +22,7 @@ def authentification(username:str, password:str):
     session.timeout = TIMEOUT
     base_url = 'https://idp.lecnam.net'
     response = session.get(base_url)
-    #print(session.cookies)
-    #print(response.text)
+
     soup = BeautifulSoup(response.text, features='html.parser')
     form = soup.select_one('form')
     url = form.attrs['action']
@@ -25,11 +31,7 @@ def authentification(username:str, password:str):
         data={'j_username':username, 'j_password':password, '_eventId_proceed':''},
         headers={'content-type': 'application/x-www-form-urlencoded'}
     )
-    #print(response.url)
-    #print(response.request.body)
-    #print(response.request.headers)
-    #print(response)
-    #print(response.text)
+
     soup = BeautifulSoup(response.text, features='html.parser')
     form = soup.select_one('form')
     url = form.attrs['action']
@@ -39,17 +41,10 @@ def authentification(username:str, password:str):
         'RelayState':relay_state,
         'SAMLResponse':saml_response,
     }
-    #print(url)
-    #print(data)
+
     response = session.post(
         url=url,
         data=data
         )
-    #print(response.url)
-    #print(response.request.body)
-    #print(response.request.headers)
-    #print(response)
-    #print(response.text)
-    #print(session.cookies)
-    requests_session.set(session)
 
+    requests_session.set(session)
